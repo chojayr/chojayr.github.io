@@ -5,7 +5,8 @@
 
 You can check it out here! 
 
-![Pidro](http://chojayr.github.io/) 
+[Pidro](http://chojayr.github.io/) 
 
 
 #@Chojayr 
+
