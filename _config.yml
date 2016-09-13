@@ -24,7 +24,7 @@ description: A virtual proof that name is awesome!
 # List of links in the navigation bar
 navbar-links:
   About Me: "aboutme"
-  Resources:
+  Repos:
     - GitHub: "https://github.com/chojayr"
     - DockerHub: "https://hub.docker.com/u/chojayr/"
 
