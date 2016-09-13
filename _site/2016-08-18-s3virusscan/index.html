@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+  <!-- Beautiful Jekyll | MIT license | Copyright Dean Attali 2016 -->
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>S3 Virus Scanning</title>
+
+  <meta name="author" content="Luis R. Laviña Jr." />
+  
+  
+
+  <link rel="alternate" type="application/rss+xml" title="Luis Blog - A virtual proof that name is awesome!" href="/feed.xml" />
+
+  
+    
+      <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.6.0/css/font-awesome.min.css" />
+    
+      
+  
+  
+    
+      <link rel="stylesheet" href="/css/bootstrap.min.css" />
+    
+      <link rel="stylesheet" href="/css/bootstrap-social.css" />
+    
+      <link rel="stylesheet" href="/css/main.css" />
+    
+    
+  
+  
+    
+      <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+    
+      <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+    
+  
+
+    
+  
+  
+
+  
+
+  <!-- Facebook OpenGraph tags -->
+  <meta property="og:title" content="S3 Virus Scanning" />
+  <meta property="og:type" content="website" />
+  
+  <meta property="og:url" content="http://username.github.io/2016-08-18-s3virusscan/" />
+  
+  
+  <meta property="og:image" content="http://username.github.io/img/avatar-ico.jpeg" />
+  
+  
+  <!-- Twitter summary cards -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@chojayr" />
+  <meta name="twitter:creator" content="@chojayr" />
+  <meta name="twitter:title" content="S3 Virus Scanning" />
+  <meta name="twitter:description" content="A simple solution to implement an additional security on your data on AWS S3. this is to make an antivirus scanning on every new data/object added on your S3 bucket. Feature Uses ClamAV to scan “newly” added files on S3 buckets Updates ClamAV database every 3 hours automatically Publishes a..." />
+  
+  <meta name="twitter:image" content="http://username.github.io/img/avatar-ico.jpeg" />
+  
+  
+</head>
+
+
+  <body>
+  
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="http://username.github.io">Luis Blog</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+          <li>
+            
+            
+
+
+
+
+
+<a href="/aboutme">About Me</a>
+
+          </li>
+        
+        
+        
+          <li class="navlinks-container">
+            <a class="navlinks-parent" href="javascript:void(0)">Resources</a>
+            <div class="navlinks-children">
+              
+                
+                  
+            
+
+
+
+
+
+<a href="https://github.com/chojayr">GitHub</a>
+
+                
+              
+                
+                  
+            
+
+
+
+
+
+<a href="https://hub.docker.com/u/chojayr/">DockerHub</a>
+
+                
+              
+            </div>
+          </li>
+        
+        
+      </ul>
+    </div>
+
+	
+	<div class="avatar-container">
+	  <div class="avatar-img-border">
+	    <a href="http://username.github.io ">
+	      <img class="avatar-img" src="/img/avatar-ico.jpeg" />
+		</a>
+	  </div>
+	</div>
+	
+
+  </div>
+</nav>
+
+
+    <!-- TODO this file has become a mess, refactor it -->
+
+
+
+
+
+<header class="header-section ">
+
+<div class="intro-header no-img">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div class="post-heading">
+          <h1>S3 Virus Scanning</h1>
+		  
+		  
+		  
+		  <span class="post-meta">Posted on August 18, 2016</span>
+		  
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</header>
+
+
+
+
+<div class="container">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <article role="main" class="blog-post">
+        <p>A simple solution to implement an additional security on your data on AWS S3. this is to make an antivirus scanning on every new data/object added  on your S3 bucket.</p>
+
+<h3 id="feature">Feature</h3>
+<ul>
+  <li>Uses ClamAV to scan “newly” added files on S3 buckets</li>
+  <li>Updates ClamAV database every 3 hours automatically</li>
+  <li>Publishes a message to SNS in case of a finding</li>
+  <li>Can optionally delete compromised files automatically</li>
+</ul>
+
+<h3 id="how-it-works">How it works</h3>
+<ul>
+  <li>Using the S3 event notification. the S3 bucket will send events to the SQS queue in case of newly created file(object)</li>
+  <li>A ruby script running as a daemon in the background on the EC2 instance will act as a worker that will pull the queue messages from SQS which the contents are the events from the S3 buckets of newly created objects.</li>
+  <li>The script will download the newly created object from the S3 bucket then perform clamscan on the downloaded object to verify if there’s a threat on the file</li>
+  <li>Once a threat found on a scanned file it will delete the file and send an SNS notification to the subscribers</li>
+  <li>The script also perform an antivirus update every 3 hours</li>
+</ul>
+
+<p><img src="/img/s3virusscan.png" alt="s3virusscanning" class="img-responsive" /></p>
+
+<h3 id="automation">Automation</h3>
+
+<p><strong>CloudFormation template</strong></p>
+
+<p>The whole stack to implement the AWS S3 virus scan including the creation of SQS queue, SNS topic and the provisioning of the EC2 instance will be build automatically thru CloudFormation template, here’s the sample CF template. for the s3-virusscan-stack. the repo contains 2 JSON file, the template and the params, You only need to modify the content of the params replace it with the value of your own.</p>
+
+<p><sub><strong><em>Repository:</em></strong></sub> <sub><a href="https://github.com/chojayr/s3-virusscan-stack">s3-virusscan-stack</a></sub></p>
+
+<p> </p>
+
+<p><strong>Salt State</strong></p>
+
+<p>The Salt state will be the one responsible for the setting-up of the scripts and the installation of the script dependencies like Ruby, Gems, script configuration files and the installation of the ClamAV. checkout the salt state here</p>
+
+<p><sub><strong><em>Repository:</em></strong></sub> <sub><a href="https://github.com/chojayr/salt-s3clamavscan">salt-s3clamavscan</a></sub></p>
+
+<p> </p>
+
+<p><strong>Deploying the Stack</strong></p>
+
+<p>To deploy the CloudFormation template, You need to modify the “s3_virusscan_params.json” based on the environment you will going to deploy the stack.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">$ </span>aws cloudformation create-stack --stack-name &lt;your_stack_name&gt; --template-body file://s3_virusscan_template.json --parameters file://s3_virusscan_params.json</code></pre></figure>
+
+<p> </p>
+
+<p><strong>Add the S3 Bucket</strong></p>
+
+<p>Using the S3 event notification feature we can now send message to the SQS when a new object is added to the bucket or an existing object is overwritte</p>
+
+<p><img src="/img/s3conf.png" alt="S3EventNotification" class="img-responsive" /></p>
+
+<p>For more details about S3 event notification kindly check it <a href="https://aws.amazon.com/blogs/aws/s3-event-notification/">here</a></p>
+
+
+      </article>
+
+      
+
+      
+        <!-- Check if any share-links are active -->
+
+
+
+
+<section id = "social-share-section">
+
+  <!--- Share on Twitter -->
+  
+    <a href="https://twitter.com/intent/tweet?text=http://username.github.io/2016-08-18-s3virusscan/"
+      class="btn btn-social-icon btn-twitter" title="Share on Twitter">
+      <span class="fa fa-fw fa-twitter" aria-hidden="true"></span>
+    </a>
+  
+
+  <!--- Share on Facebook -->
+  
+    <a href="https://www.facebook.com/sharer/sharer.php?u=http://username.github.io/2016-08-18-s3virusscan/"
+      class="btn btn-social-icon btn-facebook" title="Share on Facebook">
+      <span class="fa fa-fw fa-facebook" aria-hidden="true"></span>
+    </a>
+  
+
+  <!--- Share on Google Plus -->
+  
+
+  <!--- Share on LinkedIn -->
+  
+    <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://username.github.io/2016-08-18-s3virusscan/"
+      class="btn btn-social-icon btn-linkedin" title="Share on LinkedIn">
+      <span class="fa fa-fw fa-linkedin" aria-hidden="true"></span>
+    </a>
+  
+
+</section>
+
+
+      
+
+      <ul class="pager blog-pager">
+        
+        <li class="previous">
+          <a href="/2013-11-18-pidro/" data-toggle="tooltip" data-placement="top" title="RaspberryPi + TB6612FNG">&larr; Previous Post</a>
+        </li>
+        
+        
+        <li class="next">
+          <a href="/2016-08-19-vless/" data-toggle="tooltip" data-placement="top" title="vless! the colorful less">Next Post &rarr;</a>
+        </li>
+        
+      </ul>
+
+      
+        <div class="disqus-comments">
+          
+
+        </div>
+      
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container beautiful-jekyll-footer">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+          
+          <li>
+            <a href="https://github.com/chojayr" title="GitHub">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+		  
+          <li>
+            <a href="https://twitter.com/chojayr" title="Twitter">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+      
+		  
+          <li>
+            <a href="mailto:youremail@domain.com" title="Email me">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+		  
+		  
+		  
+          <li>
+            <a href="https://stackoverflow.com/users/2830373/chojayr" title="StackOverflow">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-stack-overflow fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+      
+      
+      
+      
+		  
+        </ul>
+        <p class="copyright text-muted">
+		  Luis R. Laviña Jr.
+		  &nbsp;&bull;&nbsp;
+		  2016
+
+		  
+		  &nbsp;&bull;&nbsp;
+		  <a href="http://username.github.io">YALSoM :)</a>
+		  
+	    </p>
+	        <!-- Please don't remove this, keep my open source work credited :) -->
+		<p class="theme-by text-muted">
+		  Theme by
+		  <a href="http://deanattali.com/beautiful-jekyll/">beautiful-jekyll</a>
+		</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+  
+    
+
+
+
+
+
+
+  
+    <!-- doing something a bit funky here because I want to be careful not to include JQuery twice! -->
+    
+      <script>
+      	if (typeof jQuery == 'undefined') {
+      	  document.write('<script src="/js/jquery-1.11.2.min.js"></scr' + 'ipt>');
+      	}
+      </script>
+    
+  
+    <!-- doing something a bit funky here because I want to be careful not to include JQuery twice! -->
+    
+	<script src="/js/bootstrap.min.js"></script>
+    
+  
+    <!-- doing something a bit funky here because I want to be careful not to include JQuery twice! -->
+    
+	<script src="/js/main.js"></script>
+    
+  
+
+
+
+
+  
+  </body>
+</html>

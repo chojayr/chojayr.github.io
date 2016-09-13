@@ -1,0 +1,32 @@
+---
+layout: post
+title:  "vless! the colorful less"
+date:   2016-08-20 00:35:09 +0800
+categories: tech
+---
+
+vless is just a script to implement a command "less" to make a colorful output like vim, this script actually used the vim macros to apply the colorful output. 
+
+<sub>**How to use it?**</sub>
+
+1. Just clone the script here [vless][vless]
+
+2. Then just run
+
+{% highlight ruby %}
+$ cd vless
+$ sudo ./vless.sh
+{% endhighlight %}
+
+3. You can now use:
+{% highlight ruby %}
+$ vless README.md
+{% endhighlight %}
+
+
+<sub>**Works with the following *nix**</sub>
+* Ubuntu 14.04 & 16.04
+* Centos 6.X & Fedora
+* Mac OSX
+
+[vless]:   https://github.com/chojayr/vless

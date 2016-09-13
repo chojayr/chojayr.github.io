@@ -1,0 +1,82 @@
+---
+layout: post
+title:  "RaspberryPi + TB6612FNG"
+date:   2013-11-19 00:35:09 +0800
+categories: tech
+---
+
+I believe that there's a lot of RaspberryPi projects outside the tech world, a lot of good stuff that you can make especially if you are a "DIY guy" that always want to make your own version of "that very cool thing!" one day my boss gave me a RaspberryPi(That's the first time I saw and touch a RaspberryPi, all thanks to ferduc). Playing with the RPi and installing different Linux flavor Operating System on it is quite fun. but then one time a saw a blog about "Controlling Bigtrak Motors with RaspberryPi" and its quite impressive and that's give me interest to DIY my own version of RPi and motor controller here's the details
+
+&nbsp;
+
+#### Materials:
+
+* RaspberryPi
+* TB6612FNG (dual motor controller)
+* 2pcs 6V DC motor (tb6612fng can handle up to 15v supply for dc motor please read the datasheet)
+* 4pcs AA Battery
+* battery holder for AA Battery
+* Prototyping Board(Bread Board)
+* Jumper Wire (Solid)
+
+&nbsp;
+
+Before starting to assemble and try to work around anything, you need to alteast try to read and analyse some of the basics of the following
+
+<sup>*Note: These guides above are very important for You to avoid destroying your RaspberryPi*</sup>
+* [RaspberryPi GPIO][rpi-lesson]
+* [Adafruits RaspberryPi GPIO set-up][rpi-setup]
+* [TB6612FNG][tb66]
+
+&nbsp;
+
+### My Work Around
+
+
+<sub>**TB6612FNG Motor Controller**</sub>
+
+![TB6612FNG](/img/tbfg.png){:class="img-responsive"}
+
+<sub>*[Download data sheet here][data-sheet]*</sub>
+
+
+
+<sub>**RaspberryPi GPIO**</sub>
+
+![RaspberryPi GPIO](/img/gpio.png){:class="img-responsive"}
+
+
+<sub>**Wiring Details (Rpi GPIO to TB6612FNG MC)**</sub>
+
+{% highlight ruby %}
+AIN1 => GPIO 27/21
+AIN1 => GPIO 27/21    
+AIN2 => GPIO 4        
+BIN1 => GPIO 24       
+BIN2 => GPIO 25       
+AO1 => DC motor 1     
+AO2 => DC motor 1
+BO1 => DC motor 2
+BO2 => DC motor 2
+PWMA => 17
+PWMB => 23
+STBY => 22
+VCC => 3.3v of RaspberryPi (pin 1)
+VM => power source (for DC motors)
+{% endhighlight %}
+
+&nbsp;
+
+<sub>**Wiring Diagram**</sub>
+![Diagram](/img/layout-pidro.png){:class="img-responsive"}
+
+
+<sub>**Python code sample here** [Pidro][pidro]</sub>
+
+[rpi-setup]: http://learn.adafruit.com/adafruits-raspberry-pi-lesson-4-gpio-setup/
+[rpi-lesson]: http://elinux.org/RPi_Low-level_peripherals#General_Purpose_Input.2FOutput_.28GPIO.29
+[tb66]: http://www.pololu.com/product/713
+[data-sheet]: https://www.sparkfun.com/datasheets/Robotics/TB6612FNG.pdf
+[pidro]: https://github.com/chojayr/Pi-dro
+
+
