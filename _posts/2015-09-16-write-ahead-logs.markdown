@@ -132,6 +132,8 @@ except KeyboardInterrupt:
   print "Exit Status"
 {% endhighlight %}
 
+You can checkout the python script for both master and slave [here][git]
+
 
 **Note:**
 
@@ -150,5 +152,6 @@ For more details about sending custom metrics on Stackdriver kindly check [here]
 
 
 [statsd]: https://codeascraft.com/2011/02/15/measure-anything-measure-everything/
+[git]: https://github.com/chojayr/wal_check
 [sdriver]: http://support.stackdriver.com/customer/en/portal/articles/1491766-sending-custom-application-metrics-to-the-stackdriver-system 
 
