@@ -3,8 +3,8 @@
   <channel>
     <title>Luis Blog</title>
     <description>A virtual proof that name is awesome!</description>
-    <link>http://username.github.io</link>
-    <atom:link href="http://username.github.io/feed.xml" rel="self" type="application/rss+xml" />
+    <link>http://chojayr.github.io</link>
+    <atom:link href="http://chojayr.github.io/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
         <title>vless! the colorful less</title>
@@ -13,8 +13,8 @@
           vless is just a script to implement a command “less” to make a colorful output like vim, this script actually used the vim macros to apply the colorful output. How to use it? Just clone the script here vless Then just run $ cd vless $ sudo ./vless.sh You can...
         </description>
         <pubDate>Fri, 19 Aug 2016 09:35:09 -0700</pubDate>
-        <link>http://username.github.io/2016-08-19-vless/</link>
-        <guid isPermaLink="true">http://username.github.io/2016-08-19-vless/</guid>
+        <link>http://chojayr.github.io/2016-08-19-vless/</link>
+        <guid isPermaLink="true">http://chojayr.github.io/2016-08-19-vless/</guid>
       </item>
     
       <item>
@@ -24,8 +24,19 @@
           A simple solution to implement an additional security on your data on AWS S3. this is to make an antivirus scanning on every new data/object added on your S3 bucket. Feature Uses ClamAV to scan “newly” added files on S3 buckets Updates ClamAV database every 3 hours automatically Publishes a...
         </description>
         <pubDate>Thu, 18 Aug 2016 09:35:09 -0700</pubDate>
-        <link>http://username.github.io/2016-08-18-s3virusscan/</link>
-        <guid isPermaLink="true">http://username.github.io/2016-08-18-s3virusscan/</guid>
+        <link>http://chojayr.github.io/2016-08-18-s3virusscan/</link>
+        <guid isPermaLink="true">http://chojayr.github.io/2016-08-18-s3virusscan/</guid>
+      </item>
+    
+      <item>
+        <title>Monitoring PostgreSQL replication lag using Stackdriver and Statsd</title>
+        <description>
+          
+          One of the important thing to monitor on the PostgreSQL is the streaming replication, it is very important to know the latency between the pg master and pg slave so we can make sure that our database are consistent There’s a PostgreSQL functions to check the the WAL current status....
+        </description>
+        <pubDate>Tue, 15 Sep 2015 13:25:11 -0700</pubDate>
+        <link>http://chojayr.github.io/2015-09-15-write-ahead-logs/</link>
+        <guid isPermaLink="true">http://chojayr.github.io/2015-09-15-write-ahead-logs/</guid>
       </item>
     
       <item>
@@ -35,8 +46,8 @@
           I believe that there’s a lot of RaspberryPi projects outside the tech world, a lot of good stuff that you can make especially if you are a “DIY guy” that always want to make your own version of “that very cool thing!” one day my boss gave me a RaspberryPi(That’s...
         </description>
         <pubDate>Mon, 18 Nov 2013 08:35:09 -0800</pubDate>
-        <link>http://username.github.io/2013-11-18-pidro/</link>
-        <guid isPermaLink="true">http://username.github.io/2013-11-18-pidro/</guid>
+        <link>http://chojayr.github.io/2013-11-18-pidro/</link>
+        <guid isPermaLink="true">http://chojayr.github.io/2013-11-18-pidro/</guid>
       </item>
     
   </channel>

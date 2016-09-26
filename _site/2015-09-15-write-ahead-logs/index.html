@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+  <!-- Beautiful Jekyll | MIT license | Copyright Dean Attali 2016 -->
+  <head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Monitoring PostgreSQL replication lag using Stackdriver and Statsd</title>
+
+  <meta name="author" content="Luis R. Laviña Jr." />
+  
+  
+
+  <link rel="alternate" type="application/rss+xml" title="Luis Blog - A virtual proof that name is awesome!" href="/feed.xml" />
+
+  
+    
+      <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.6.0/css/font-awesome.min.css" />
+    
+      
+  
+  
+    
+      <link rel="stylesheet" href="/css/bootstrap.min.css" />
+    
+      <link rel="stylesheet" href="/css/bootstrap-social.css" />
+    
+      <link rel="stylesheet" href="/css/main.css" />
+    
+    
+  
+  
+    
+      <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+    
+      <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+    
+  
+
+    
+  
+  
+
+  
+
+  <!-- Facebook OpenGraph tags -->
+  <meta property="og:title" content="Monitoring PostgreSQL replication lag using Stackdriver and Statsd" />
+  <meta property="og:type" content="website" />
+  
+  <meta property="og:url" content="http://chojayr.github.io/2015-09-15-write-ahead-logs/" />
+  
+  
+  <meta property="og:image" content="http://chojayr.github.io/img/avatar-ico.jpeg" />
+  
+  
+  <!-- Twitter summary cards -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@chojayr" />
+  <meta name="twitter:creator" content="@chojayr" />
+  <meta name="twitter:title" content="Monitoring PostgreSQL replication lag using Stackdriver and Statsd" />
+  <meta name="twitter:description" content="One of the important thing to monitor on the PostgreSQL is the streaming replication, it is very important to know the latency between the pg master and pg slave so we can make sure that our database are consistent There’s a PostgreSQL functions to check the the WAL current status...." />
+  
+  <meta name="twitter:image" content="http://chojayr.github.io/img/avatar-ico.jpeg" />
+  
+  
+</head>
+
+
+  <body>
+  
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="http://chojayr.github.io">Luis Blog</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+          <li>
+            
+            
+
+
+
+
+
+<a href="/aboutme">About Me</a>
+
+          </li>
+        
+        
+        
+          <li class="navlinks-container">
+            <a class="navlinks-parent" href="javascript:void(0)">Repos</a>
+            <div class="navlinks-children">
+              
+                
+                  
+            
+
+
+
+
+
+<a href="https://github.com/chojayr">GitHub</a>
+
+                
+              
+                
+                  
+            
+
+
+
+
+
+<a href="https://hub.docker.com/u/chojayr/">DockerHub</a>
+
+                
+              
+                
+                  
+            
+
+
+
+
+
+<a href="https://gist.github.com/chojayr">Gist</a>
+
+                
+              
+            </div>
+          </li>
+        
+        
+      </ul>
+    </div>
+
+	
+	<div class="avatar-container">
+	  <div class="avatar-img-border">
+	    <a href="http://chojayr.github.io ">
+	      <img class="avatar-img" src="/img/avatar-ico.jpeg" />
+		</a>
+	  </div>
+	</div>
+	
+
+  </div>
+</nav>
+
+
+    <!-- TODO this file has become a mess, refactor it -->
+
+
+
+
+
+<header class="header-section ">
+
+<div class="intro-header no-img">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <div class="post-heading">
+          <h1>Monitoring PostgreSQL replication lag using Stackdriver and Statsd</h1>
+		  
+		  
+		  
+		  <span class="post-meta">Posted on September 15, 2015</span>
+		  
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</header>
+
+
+
+
+<div class="container">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+      <article role="main" class="blog-post">
+        <p>One of the important thing to monitor on the PostgreSQL is the streaming replication, it is very important to know the latency between the pg master and pg slave so we can make sure that our database are consistent</p>
+
+<p>There’s a PostgreSQL functions to check the the WAL current status. for the master <strong>“pg_current_xlog_location()”</strong> and for slave <strong>“pg_last_xlog_replay_location()”</strong> this can provide the result of the current byte position (e.g. 0/D02E9A0 )  but not on a numerical value that is why we need to implement a script to convert the current byte position into integer and send the value to monitoring services like Stackdriver</p>
+
+<h3 id="statsd">Statsd</h3>
+<p>A network daemon runs on Node.js platform and listen for statistics, it send data on a backend service like Graphite over UDP or TCP. to learn more about Statsd kindly visit this <a href="https://codeascraft.com/2011/02/15/measure-anything-measure-everything/">Link</a></p>
+
+<h3 id="set-up-statsd-to-send-aggregated-metrics-on-stackdriver">Set-up Statsd to send aggregated metrics on Stackdriver</h3>
+
+<p>Need to install the dependency for statsd (nodejs and npm)</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">$ </span>sudo yum install nodejs npm</code></pre></figure>
+
+<p>Download the statsd and the stackdriver-stackd-backend then define the api-key of your stackdriver account of your statsd configuration</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">$ </span>git clone https://github.com/etsy/statsd
+<span class="gp">$ </span><span class="nb">cd </span>statsd
+<span class="gp">$ </span>npm install stackdriver-statsd-backend</code></pre></figure>
+
+<p>Create a stackdriver statsd config</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">example:
+
+sdriverconifg.js
+<span class="o">{</span>
+    flushInterval: 60000,
+    backends: <span class="o">[</span> <span class="s2">"stackdriver-statsd-backend"</span> <span class="o">]</span>,
+    stackdriver: <span class="o">{</span>
+    apiKey: <span class="s2">"APIKEYVALUEHERE"</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></figure>
+
+<p>To run statsd</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">$ </span><span class="nb">cd </span>statsd
+<span class="gp">$ </span>bin/statsd sdriverconfig.js
+16 Sep 12:10:44 - reading config file: sdriverconfig.js
+16 Sep 12:10:44 - server is up</code></pre></figure>
+
+<p> </p>
+
+<h4 id="script-to-monitor-the-write-ahead-log-on-master">Script to monitor the Write Ahead Log on Master</h4>
+<p><strong>wal_master.py</strong></p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#!/usr/local/bin/python2.7</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">statsd</span> <span class="kn">import</span> <span class="n">StatsdClient</span>
+<span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">Popen</span><span class="p">,</span> <span class="n">PIPE</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="n">masterip</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">mqry</span> <span class="o">=</span> <span class="s">'select * from pg_current_xlog_location();'</span>
+ 
+ 
+<span class="n">c</span> <span class="o">=</span> <span class="n">StatsdClient</span><span class="p">(</span><span class="s">'localhost'</span><span class="p">,</span> <span class="mi">8125</span><span class="p">)</span>
+ 
+<span class="c">#define methods that will remove "/" on the value</span>
+<span class="k">def</span> <span class="nf">rem</span><span class="p">(</span><span class="n">wal</span><span class="p">):</span>
+  <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">"/"</span><span class="p">,</span> <span class="s">""</span><span class="p">,</span> <span class="n">wal</span><span class="p">)</span>
+<span class="c">#remove extra line #print mwal.rstrip('\n')</span>
+<span class="k">try</span><span class="p">:</span>
+  <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+    <span class="c"># get the wal status on master</span>
+    <span class="n">mwal</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">([</span><span class="s">'psql'</span><span class="p">,</span> <span class="s">'-q'</span><span class="p">,</span> <span class="s">'-t'</span><span class="p">,</span> <span class="s">'-A'</span><span class="p">,</span> <span class="s">'-w'</span><span class="p">,</span> <span class="s">'-c'</span><span class="p">,</span> <span class="n">mqry</span> <span class="p">])</span>
+    <span class="c">#then convert to integer as a "bytes" value</span>
+    <span class="n">mas</span> <span class="o">=</span> <span class="n">rem</span><span class="p">(</span><span class="n">mwal</span><span class="p">)</span>
+    <span class="n">master</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mas</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+    <span class="n">c</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s">'wal_master_status'</span><span class="p">,</span> <span class="n">master</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">master</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+<span class="k">except</span> <span class="nb">KeyboardInterrupt</span><span class="p">:</span>
+  <span class="k">print</span> <span class="s">"Exit Status"</span></code></pre></figure>
+
+<p> </p>
+
+<h4 id="script-to-monitor-the-write-ahead-log-status-on-slave">Script to monitor the Write Ahead Log status on slave</h4>
+<p><strong>wal_slave.py</strong></p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#!/usr/local/bin/python2.7</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">statsd</span> <span class="kn">import</span> <span class="n">StatsdClient</span>
+<span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">Popen</span><span class="p">,</span> <span class="n">PIPE</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+ 
+ 
+<span class="n">sqry</span> <span class="o">=</span> <span class="s">'select * from pg_last_xlog_replay_location();'</span>
+<span class="c">#define databse</span>
+<span class="n">db</span> <span class="o">=</span> <span class="s">'databasename'</span>
+ 
+ 
+<span class="n">c</span> <span class="o">=</span> <span class="n">StatsdClient</span><span class="p">(</span><span class="s">'localhost'</span><span class="p">,</span> <span class="mi">8125</span><span class="p">)</span>
+<span class="c">#define methods that will remove "/" on the value</span>
+<span class="k">def</span> <span class="nf">rem</span><span class="p">(</span><span class="n">wal</span><span class="p">):</span>
+  <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">"/"</span><span class="p">,</span> <span class="s">""</span><span class="p">,</span> <span class="n">wal</span><span class="p">)</span>
+ 
+ 
+<span class="c">#remove extra line #print mwal.rstrip('\n')</span>
+<span class="k">try</span><span class="p">:</span>
+  <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+    <span class="c"># get the wal status on master and slave</span>
+    <span class="n">swal</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">([</span><span class="s">'psql'</span><span class="p">,</span> <span class="s">'-q'</span><span class="p">,</span> <span class="s">'-t'</span><span class="p">,</span> <span class="s">'-A'</span><span class="p">,</span> <span class="s">'-w'</span><span class="p">,</span> <span class="s">'-c'</span><span class="p">,</span> <span class="n">sqry</span> <span class="p">])</span>
+    <span class="c">#then convert to integer as a "bytes" value</span>
+    <span class="n">sla</span> <span class="o">=</span> <span class="n">rem</span><span class="p">(</span><span class="n">swal</span><span class="p">)</span>
+    <span class="n">slave</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sla</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+    <span class="c">#lagval = master - slave</span>
+    <span class="n">c</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s">'wal_slave_status'</span><span class="p">,</span> <span class="n">slave</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">slave</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+<span class="k">except</span> <span class="nb">KeyboardInterrupt</span><span class="p">:</span>
+  <span class="k">print</span> <span class="s">"Exit Status"</span></code></pre></figure>
+
+<p><strong>Note:</strong></p>
+
+<p>Script dependencies</p>
+
+<ul>
+  <li>Python version 2.7</li>
+  <li>python-statsd</li>
+</ul>
+
+<p>This will send the extracted data to Stackdriver and it will automatically populate the <strong>“wal_master_status”</strong> and the <strong>“wal_slave_status”</strong> on metric type option once adding a chart for your own dashboard</p>
+
+<p><img src="/img/custom_metrics.PNG" alt="addchart" class="img-responsive" /></p>
+
+<p>For more details about sending custom metrics on Stackdriver kindly check <a href="http://support.stackdriver.com/customer/en/portal/articles/1491766-sending-custom-application-metrics-to-the-stackdriver-system">here</a></p>
+
+
+      </article>
+
+      
+
+      
+        <!-- Check if any share-links are active -->
+
+
+
+
+<section id = "social-share-section">
+
+  <!--- Share on Twitter -->
+  
+    <a href="https://twitter.com/intent/tweet?text=http://chojayr.github.io/2015-09-15-write-ahead-logs/"
+      class="btn btn-social-icon btn-twitter" title="Share on Twitter">
+      <span class="fa fa-fw fa-twitter" aria-hidden="true"></span>
+    </a>
+  
+
+  <!--- Share on Facebook -->
+  
+    <a href="https://www.facebook.com/sharer/sharer.php?u=http://chojayr.github.io/2015-09-15-write-ahead-logs/"
+      class="btn btn-social-icon btn-facebook" title="Share on Facebook">
+      <span class="fa fa-fw fa-facebook" aria-hidden="true"></span>
+    </a>
+  
+
+  <!--- Share on Google Plus -->
+  
+
+  <!--- Share on LinkedIn -->
+  
+    <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://chojayr.github.io/2015-09-15-write-ahead-logs/"
+      class="btn btn-social-icon btn-linkedin" title="Share on LinkedIn">
+      <span class="fa fa-fw fa-linkedin" aria-hidden="true"></span>
+    </a>
+  
+
+</section>
+
+
+      
+
+      <ul class="pager blog-pager">
+        
+        <li class="previous">
+          <a href="/2013-11-18-pidro/" data-toggle="tooltip" data-placement="top" title="RaspberryPi + TB6612FNG">&larr; Previous Post</a>
+        </li>
+        
+        
+        <li class="next">
+          <a href="/2016-08-18-s3virusscan/" data-toggle="tooltip" data-placement="top" title="S3 Virus Scanning">Next Post &rarr;</a>
+        </li>
+        
+      </ul>
+
+      
+        <div class="disqus-comments">
+          
+
+        </div>
+      
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container beautiful-jekyll-footer">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+          
+          <li>
+            <a href="https://github.com/chojayr" title="GitHub">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+		  
+          <li>
+            <a href="https://twitter.com/chojayr" title="Twitter">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+      
+		  
+          <li>
+            <a href="mailto:jrlavina07@yahoo.com.ph" title="Email me">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+		  
+		  
+		  
+          <li>
+            <a href="https://stackoverflow.com/users/2830373/chojayr" title="StackOverflow">
+              <span class="fa-stack fa-lg">
+                <i class="fa fa-circle fa-stack-2x"></i>
+                <i class="fa fa-stack-overflow fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+      
+      
+      
+      
+		  
+        </ul>
+        <p class="copyright text-muted">
+		  Luis R. Laviña Jr.
+		  &nbsp;&bull;&nbsp;
+		  2016
+
+		  
+		  &nbsp;&bull;&nbsp;
+		  <a href="http://chojayr.github.io">YALSoM :)</a>
+		  
+	    </p>
+	        <!-- Please don't remove this, keep my open source work credited :) -->
+		<p class="theme-by text-muted">
+		  Theme by
+		  <a href="http://deanattali.com/beautiful-jekyll/">beautiful-jekyll</a>
+		</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+  
+    
+
+
+
+
+
+
+  
+    <!-- doing something a bit funky here because I want to be careful not to include JQuery twice! -->
+    
+      <script>
+      	if (typeof jQuery == 'undefined') {
+      	  document.write('<script src="/js/jquery-1.11.2.min.js"></scr' + 'ipt>');
+      	}
+      </script>
+    
+  
+    <!-- doing something a bit funky here because I want to be careful not to include JQuery twice! -->
+    
+	<script src="/js/bootstrap.min.js"></script>
+    
+  
+    <!-- doing something a bit funky here because I want to be careful not to include JQuery twice! -->
+    
+	<script src="/js/main.js"></script>
+    
+  
+
+
+
+
+  
+  </body>
+</html>
