@@ -11,16 +11,12 @@ I was recently working on the creation of the AWS Backup(to backup our EFS file-
 
 
 &nbsp;
----
 
 ### CF Template
 
 **aws-backup.yaml**
 
-This CF template will create the AWS Backup components BackupVault, BackupPlan and BackupSelection and it also contain a condition for the Backup policy backup frequeny (BackupOnceDaily, BackupTwiceDaily, BackupThriceDaily and BackupFourTimesDaily)
-
-
-```
+```YAML
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Create AWS Backup Vault, Backup Plan and Backup Selection
@@ -147,12 +143,14 @@ Outputs:
     Value: !GetAtt StorageBackupPlan.VersionId
 ```
 
+&nbsp;
+
 
 ### Sample parameter file
 
 **sample-params.json**
 
-```
+```javascript
 [
     {
         "ParameterKey": "CreateNewBackupVault",
@@ -193,3 +191,24 @@ Outputs:
 ]
 ```
 
+&nbsp;
+
+### Test the template
+
+```bash
+$ aws cloudformation create-stack --stack-name <stack name> --template-body file://aws-backup.yaml --parameters=file://sample-params.json 
+```
+
+NOTE:
+* This CF template will create the AWS Backup components BackupVault, BackupPlan and BackupSelection 
+
+* This template include the creation of new BackupVault if desired just set the "CreateNewBackupVault" to "true" or use the existing BackupVault e.g. "Default"
+
+* It also contain a condition for the Backup policy backup frequeny (BackupOnceDaily, BackupTwiceDaily, BackupThriceDaily and BackupFourTimesDaily) you can change it the schedule you want just follow the ![Schedule Expression for Rules](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html)
+
+*  Please check here for the supported AWS service https://aws.amazon.com/backup/features
+
+
+&nbsp;
+
+Github Repo: ![aws-backup-cf](https://github.com/chojayr/aws-backup-cf)
