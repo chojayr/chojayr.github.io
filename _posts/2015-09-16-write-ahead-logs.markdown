@@ -1,5 +1,6 @@
 ---
 layout: post
+comments: true
 title:  "Monitoring PostgreSQL replication lag using Stackdriver and Statsd"
 date:   2015-09-16 04:25:11 +0800
 categories: tech

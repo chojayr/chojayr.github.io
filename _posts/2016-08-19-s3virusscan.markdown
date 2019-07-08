@@ -1,5 +1,6 @@
 ---
 layout: post
+comments: true
 title:  "S3 Virus Scanning"
 date:   2016-08-19 00:35:09 +0800
 categories: tech

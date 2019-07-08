@@ -1,5 +1,6 @@
 ---
 layout: post
+comments: true
 title:  "RaspberryPi + TB6612FNG"
 date:   2013-11-19 00:35:09 +0800
 categories: tech
