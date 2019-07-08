@@ -1,6 +1,7 @@
 ---
 layout: post
 title:  "Summer mishaps and misfortune"
+comments: true
 date:   2017-06-16 05:05:09 +0800
 categories: exotic pets
 ---
