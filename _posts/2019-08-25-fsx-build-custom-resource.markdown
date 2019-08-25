@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Deploy AWS FSx with SelfManagedActiveDirectoryConfiguration on CloudFormation using fsx-build-custom-resource"
+title:  "Deploy AWS FSx with 'SelfManagedActiveDirectory' on CloudFormation using fsx-build-custom-resource"
 date:   2019-08-25 08:20:09 +0800
 categories: tech
 ---
@@ -35,9 +35,8 @@ As of now the FSx is still in the early stage and the AWS FSx release the suppor
 ---
 ### Deploying the fsx-build-function
 
-
-#### Download boto3 and crhelper and then package include the fsx
-
+---
+Download boto3 and crhelper and then package include the fsx
 ```bash
 $ cd fsx-build-function/fsx-build-lambda-function
 
@@ -46,9 +45,8 @@ $ pip install -r requirements.txt -t .
 $ zip -9 -r fsx-build-lambda.zip *
 
 ```
-
-#### Upload you fsx-build-lambda.zip to your S3 bucket and update the fsx-build-function.parameters
-
+---
+Upload you fsx-build-lambda.zip to your S3 bucket and update the fsx-build-function.parameters
 ```json
 [
     {
@@ -69,9 +67,8 @@ $ zip -9 -r fsx-build-lambda.zip *
     }
 ]
 ```
-
-#### Create the fsx-build-function stack
-
+---
+Create the fsx-build-function stack
 ```bash
 $ aws --region us-east-1 cloudformation create-stack --stack-name <stack name> --template-body file://template/fsx-build-function.yaml --parameters file://fsx-build-function.parameters --capabilities CAPABILITY_NAMED_IAM
 
@@ -82,11 +79,10 @@ $ aws --region us-east-1 cloudformation create-stack --stack-name <stack name> -
 ---
 ### Deploying the fsx-build-resource
 
-
-#### Encrypt the Service User Password
-
 **Note:** Your user role should be included in CMK admin or user role with Encrypt permission
 
+---
+Encrypt the Service User Password
 ```bash
 $ ./encrypt_value.py -h
 usage: encrypt_value.py [-h] [-v VAL] [-r REGION] [-k KEY]
@@ -104,9 +100,8 @@ $ ./encrypt_value.py -v <Password> -k <your KMS_key_id> -r <region>
 AQICAXXXxxxxXXXxxxXXxxxXX2O+DxJ3DlfspJTsXXxxXXxxXXxxxXXxxXXxzN266sqHlx//cmNUahAAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBSASDSXXXXxxxYa8/lWWwJGAgEQceV1wwy0XXXsSSSSSSSrBha+jZpjn5X3/XxxxXXXXXz/123eas
 --------
 ```
-
 ---
-#### Input needed information on the parameter(fsx-build-resource.parameters)
+Input needed information on the parameter(fsx-build-resource.parameters)
 
 ```bash
 $ cd fsx-build-resource
@@ -194,9 +189,8 @@ $ vim fsx-build-resource.parameters
     }
 ]
 ```
-
-#### Deploy the FSx resource (fsx-build-resource)
-
+---
+Deploy the FSx resource (fsx-build-resource)
 ```bash
 $ aws --region us-east-1 cloudformation create-stack --stack-name <your fsx resource stack name> --template-body file://template/fsx-build-resource.yaml --parameters file://fsx-build-resource.parameters
 ```
