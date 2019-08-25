@@ -30,10 +30,10 @@ As of now the FSx is still in the early stage and the AWS FSx release the suppor
 ---
 ## How to use?
 
-**Note:** You need to create a KMS key before deploying the stack, for more details about creation of KMS key please go to [KMS docs](https://docs.aws.amazon.com/kms/latest/developerguide/create-keys.html), Incase you already had a CMK you can add the IAM role that will be created by the fsx-build-function stack on the "User" list of your CMK
-
 ---
 ### Deploying the fsx-build-function
+
+**Note:** You need to create a KMS key before deploying the stack, for more details about creation of KMS key please go to [KMS docs](https://docs.aws.amazon.com/kms/latest/developerguide/create-keys.html), Incase you already had a CMK you can add the IAM role that will be created by the fsx-build-function stack on the "User" list of your CMK
 
 ---
 Download boto3 and crhelper and then package include the fsx
@@ -195,4 +195,4 @@ Deploy the FSx resource (fsx-build-resource)
 $ aws --region us-east-1 cloudformation create-stack --stack-name <your fsx resource stack name> --template-body file://template/fsx-build-resource.yaml --parameters file://fsx-build-resource.parameters
 ```
 
-**Github Repo**: [fsx-build-custom-resource](https://github.com/chojayr/aws-backup-cf)
+**Github Repo**: [fsx-build-custom-resource](https://github.com/chojayr/fsx-build-custom-resource)
