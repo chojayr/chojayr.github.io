@@ -5,11 +5,11 @@ date:   2019-08-25 08:20:09 +0800
 categories: tech
 ---
 
-
 ## fsx-build-custom-resource
 
 An automation to build the FSx share volume using the [CloudFormation Custom Resource](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html "AWS CloudFormation Custom Resource") and Python Library [custom-resource-helper](https://github.com/aws-cloudformation/custom-resource-helper "custom-resource-helper")
 
+&nbsp;
 
 ---
 ### Why using a CloudFormation Custom Resource?
@@ -21,9 +21,11 @@ As of now the FSx is still in the early stage and the AWS FSx release the suppor
 ---
 ### Components
 
-* fsx-build-function - Components to deploy the required IAM permission, Lambda Function and CloudWatch Logs that will be use by the fsx-build-resource
-* fsx-build-resource - Components to deploy the custom resource stack
-* encrypt_value.py - To encrypt the AD user password before putting it to the parameter file
+* **fsx-build-function** - Components to deploy the required IAM permission, Lambda Function and CloudWatch Logs that will be use by the fsx-build-resource
+* **fsx-build-resource** - Components to deploy the custom resource stack
+* **encrypt_value.py** - To encrypt the AD user password before putting it to the parameter file
+
+&nbsp;
 
 ---
 ### How to use?
@@ -49,8 +51,7 @@ $ zip -9 -r fsx-build-lambda.zip *
 
 **Upload you fsx-build-lambda.zip to your S3 bucket and update the fsx-build-function.parameters**
 
-
-```bash
+```json
 [
     {
         "ParameterKey": "S3BucketName",
@@ -71,16 +72,19 @@ $ zip -9 -r fsx-build-lambda.zip *
 ]
 ```
 
+**Create the fsx-build-function stack**
+
 ```bash
 $ aws --region us-east-1 cloudformation create-stack --stack-name <stack name> --template-body file://template/fsx-build-function.yaml --parameters file://fsx-build-function.parameters --capabilities CAPABILITY_NAMED_IAM
 
 ```
 
+&nbsp;
+
 ---
 #### Deploying the fsx-build-resource
 
 
----
 **Encrypt the Service User Password**
 
 NOTE: Your user role should be included in CMK admin or user role with Encrypt permission
@@ -101,14 +105,17 @@ optional arguments:
 $ ./encrypt_value.py -v <Password> -k <your KMS_key_id> -r <region>
 AQICAXXXxxxxXXXxxxXXxxxXX2O+DxJ3DlfspJTsXXxxXXxxXXxxxXXxxXXxzN266sqHlx//cmNUahAAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBSASDSXXXXxxxYa8/lWWwJGAgEQceV1wwy0XXXsSSSSSSSrBha+jZpjn5X3/XxxxXXXXXz/123eas
 ```
+
 ---
 **Input needed information on the parameter(fsx-build-resource.parameters)**
 
 ```bash
 $ cd fsx-build-resource
+
+$ vim fsx-build-resource.parameters
 ```
 
-```bash
+```json
 [
     {
         "ParameterKey": "FSxBuildFunctionStackName",
@@ -194,6 +201,5 @@ $ cd fsx-build-resource
 ```bash
 $ aws --region us-east-1 cloudformation create-stack --stack-name <your fsx resource stack name> --template-body file://template/fsx-build-resource.yaml --parameters file://fsx-build-resource.parameters
 ```
-
 
 **Github Repo**: [fsx-build-custom-resource](https://github.com/chojayr/aws-backup-cf)
