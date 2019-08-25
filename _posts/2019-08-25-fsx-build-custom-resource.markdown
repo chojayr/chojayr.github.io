@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Deploy AWS FSx with Self Managed Active Directory on CloudFormation using fsx-build-custom-resource"
+title:  "Deploy AWS FSx with SelfManagedActiveDirectoryConfiguration on CloudFormation using fsx-build-custom-resource"
 date:   2019-08-25 08:20:09 +0800
 categories: tech
 ---
@@ -12,14 +12,14 @@ An automation to build the FSx share volume using the [CloudFormation Custom Res
 &nbsp;
 
 ---
-### Why using a CloudFormation Custom Resource?
+## Why using a CloudFormation Custom Resource?
 
-As of now the FSx is still in the early stage and the AWS FSx release the support of using the ["SelfManagedActiveDirectory"](https://aws.amazon.com/about-aws/whats-new/2019/06/amazon-fsx-for-windows-file-server-now-enables-you-to-use-file-systems-directly-with-your-organizations-self-managed-active-directory/), before it only support the use of AWS DFS, the AWS FSx(Windows) CloudFormation does not support(for now, soon it will be supported) the configuration of the "SelfManagedActiveDirectory" and the only way to provision the FSx share volume with self managed active directory support on CloudFormation is by use the CloudFormation Custom Resource
+As of now the FSx is still in the early stage and the AWS FSx release the support of using the ["SelfManagedActiveDirectoryConfiguration"](https://aws.amazon.com/about-aws/whats-new/2019/06/amazon-fsx-for-windows-file-server-now-enables-you-to-use-file-systems-directly-with-your-organizations-self-managed-active-directory/), before it only support the use of AWS DFS, the AWS FSx(Windows) CloudFormation does not support(for now, soon it will be supported) the configuration of the "SelfManagedActiveDirectory" and the only way to provision the FSx share volume with self managed active directory support on CloudFormation is by use the CloudFormation Custom Resource
 
 &nbsp;
 
 ---
-### Components
+## Components
 
 * **fsx-build-function** - Components to deploy the required IAM permission, Lambda Function and CloudWatch Logs that will be use by the fsx-build-resource
 * **fsx-build-resource** - Components to deploy the custom resource stack
@@ -28,17 +28,15 @@ As of now the FSx is still in the early stage and the AWS FSx release the suppor
 &nbsp;
 
 ---
-### How to use?
+## How to use?
 
-NOTE: **KMS Key**
-
-You need to create a KMS key before deploying the stack, for more details about creation of KMS key please go to [KMS docs](https://docs.aws.amazon.com/kms/latest/developerguide/create-keys.html), Incase you already had a CMK you can add the IAM role that will be created by the fsx-build-function stack on the "User" list of your CMK
+**Note:** You need to create a KMS key before deploying the stack, for more details about creation of KMS key please go to [KMS docs](https://docs.aws.amazon.com/kms/latest/developerguide/create-keys.html), Incase you already had a CMK you can add the IAM role that will be created by the fsx-build-function stack on the "User" list of your CMK
 
 ---
-#### Deploying the fsx-build-function
+### Deploying the fsx-build-function
 
 
-**Download boto3 and crhelper and then package include the fsx**
+#### Download boto3 and crhelper and then package include the fsx
 
 ```bash
 $ cd fsx-build-function/fsx-build-lambda-function
@@ -49,7 +47,7 @@ $ zip -9 -r fsx-build-lambda.zip *
 
 ```
 
-**Upload you fsx-build-lambda.zip to your S3 bucket and update the fsx-build-function.parameters**
+#### Upload you fsx-build-lambda.zip to your S3 bucket and update the fsx-build-function.parameters
 
 ```json
 [
@@ -72,7 +70,7 @@ $ zip -9 -r fsx-build-lambda.zip *
 ]
 ```
 
-**Create the fsx-build-function stack**
+#### Create the fsx-build-function stack
 
 ```bash
 $ aws --region us-east-1 cloudformation create-stack --stack-name <stack name> --template-body file://template/fsx-build-function.yaml --parameters file://fsx-build-function.parameters --capabilities CAPABILITY_NAMED_IAM
@@ -82,12 +80,12 @@ $ aws --region us-east-1 cloudformation create-stack --stack-name <stack name> -
 &nbsp;
 
 ---
-#### Deploying the fsx-build-resource
+### Deploying the fsx-build-resource
 
 
-**Encrypt the Service User Password**
+#### Encrypt the Service User Password
 
-NOTE: Your user role should be included in CMK admin or user role with Encrypt permission
+**Note:** Your user role should be included in CMK admin or user role with Encrypt permission
 
 ```bash
 $ ./encrypt_value.py -h
@@ -104,10 +102,11 @@ optional arguments:
                         value
 $ ./encrypt_value.py -v <Password> -k <your KMS_key_id> -r <region>
 AQICAXXXxxxxXXXxxxXXxxxXX2O+DxJ3DlfspJTsXXxxXXxxXXxxxXXxxXXxzN266sqHlx//cmNUahAAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBSASDSXXXXxxxYa8/lWWwJGAgEQceV1wwy0XXXsSSSSSSSrBha+jZpjn5X3/XxxxXXXXXz/123eas
+--------
 ```
 
 ---
-**Input needed information on the parameter(fsx-build-resource.parameters)**
+#### Input needed information on the parameter(fsx-build-resource.parameters)
 
 ```bash
 $ cd fsx-build-resource
@@ -196,7 +195,7 @@ $ vim fsx-build-resource.parameters
 ]
 ```
 
-**Deploy the FSx resource (fsx-build-resource)**
+#### Deploy the FSx resource (fsx-build-resource)
 
 ```bash
 $ aws --region us-east-1 cloudformation create-stack --stack-name <your fsx resource stack name> --template-body file://template/fsx-build-resource.yaml --parameters file://fsx-build-resource.parameters
